@@ -266,7 +266,7 @@ for s:color_name in keys(s:ansi)
 endfor
 
 function! s:buflisted()
-  return filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&filetype") != "qf"')
+  return filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&filetype") != "qf" && !empty(bufname(v:val))')
 endfunction
 
 function! s:fzf(name, opts, extra)
@@ -496,7 +496,8 @@ function! fzf#vim#buffer_lines(...)
   return s:fzf('blines', {
   \ 'source':  s:buffer_lines(query),
   \ 'sink*':   s:function('s:buffer_line_handler'),
-  \ 'options': s:reverse_list(['+m', '--tiebreak=index', '--multi', '--prompt', 'BLines> ', '--ansi', '--extended', '--nth=2..', '--tabstop=1'])
+  \ 'options': '+m --tiebreak=index --prompt "BLines> " --ansi --extended --nth=2.. --reverse --tabstop=1 '
+  \.'--bind ''ctrl-g:toggle-preview,ctrl-s:toggle-sort'' --preview-window ''up:50%'' --preview ''$HOME/.dotfiles/bin/preview.rb '.expand('%:p').':{}'' '
   \}, args)
 endfunction
 
@@ -773,7 +774,7 @@ function! fzf#vim#ag_raw(command_suffix, ...)
   if !executable('ag')
     return s:warn('ag is not found')
   endif
-  return call('fzf#vim#grep', extend(['ag --nogroup --column --color '.a:command_suffix, 1], a:000))
+  return call('fzf#vim#grep', extend(['ag --nogroup --column --color --color-match "38;05;1" '.a:command_suffix, 1], a:000))
 endfunction
 
 " command (string), has_column (0/1), [options (dict)], [fullscreen (0/1)]
@@ -791,7 +792,7 @@ function! fzf#vim#grep(grep_command, has_column, ...)
   let opts = {
   \ 'column':  a:has_column,
   \ 'options': ['--ansi', '--prompt', capname.'> ',
-  \             '--multi', '--bind', 'alt-a:select-all,alt-d:deselect-all',
+  \             '--multi', '--bind', 'ctrl-d:deselect-all',
   \             '--delimiter', ':', '--preview-window', '+{2}-/2']
   \}
   function! opts.sink(lines)
@@ -1072,7 +1073,13 @@ function! s:helptag_sink(line)
   if stridx(&rtp, rtp) < 0
     execute 'set rtp+='.s:escape(rtp)
   endif
-  execute 'help' tag
+  execute 'tab help' tag
+endfunction
+
+function! fzf#vim#MruHandler()
+  let lines = readfile('/tmp/mruretval')
+  silent !rm /tmp/mruretval
+  silent! call s:ag_handler(lines, 1)
 endfunction
 
 function! fzf#vim#helptags(...)
@@ -1187,7 +1194,7 @@ function! s:commits(buffer_local, args)
     return s:warn('Not in git repository')
   endif
 
-  let source = 'git log '.get(g:, 'fzf_commits_log_options', '--color=always '.fzf#shellescape('--format=%C(auto)%h%d %s %C(green)%cr'))
+  let source = 'git log '.get(g:, 'fzf_commits_log_options', '--color=always '.fzf#shellescape('--format="%C(auto)%h%d %s %C(red)%an %C(green)%cr"'))
   let current = expand('%')
   let managed = 0
   if !empty(current)
