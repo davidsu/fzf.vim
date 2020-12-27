@@ -2,6 +2,7 @@
 
 REVERSE="\x1b[7m"
 RESET="\x1b[m"
+DARKBG="\x1b[48;5;239m"
 
 if [ -z "$1" ]; then
   echo "usage: $0 FILENAME[:LINENO][:IGNORED]"
@@ -58,6 +59,6 @@ CMD=${CMD//{\}/$(printf %q "$FILE")}
 
 eval "$CMD" 2> /dev/null | awk "{ \
     if (NR == $CENTER) \
-        { gsub(/\x1b[[0-9;]*m/, \"&$REVERSE\"); printf(\"$REVERSE%s\n$RESET\", \$0); } \
+        { gsub(/\x1b[[0-9;]*m/, \"&$DARKBG\"); printf(\"$DARKBG%s\n$RESET\", \$0); } \
     else printf(\"$RESET%s\n\", \$0); \
     }"
